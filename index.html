@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Archimedean Spiral — r = a + bθ</title>
+  <style>
+    :root{
+      --bg:#0f1115; --panel:#161a22; --text:#e7ecf3; --muted:#9aa4b2; --accent:#6ee7ff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,Pretendard,sans-serif; color:var(--text); background:linear-gradient(180deg,#0b0e13 0%, #0f1115 100%);}    
+    .wrap{display:grid; grid-template-columns:340px 1fr; gap:16px; min-height:100vh;}
+    @media (max-width:900px){.wrap{grid-template-columns:1fr;}}
+    header{grid-column:1/-1; padding:18px 20px 4px;}
+    header h1{margin:0; font-size:20px; font-weight:700; letter-spacing:.2px}
+    header .sub{color:var(--muted); font-size:13px; margin-top:6px}
+    .panel{background:var(--panel); border:1px solid #232a36; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .controls{padding:16px}
+    .row{display:grid; grid-template-columns:110px 1fr 72px; gap:10px; align-items:center; margin:10px 0}
+    .row label{font-size:13px; color:var(--muted)}
+    .row input[type="range"]{width:100%}
+    .row input[type="number"], .row select{width:100%; padding:8px 10px; background:#0d1118; border:1px solid #283140; color:var(--text); border-radius:10px}
+    .inline{display:flex; gap:10px}
+    .btnbar{display:flex; gap:10px; padding:12px 16px; border-top:1px solid #232a36}
+    button{appearance:none; border:none; padding:10px 12px; border-radius:12px; background:#1e2633; color:var(--text); font-weight:600; cursor:pointer}
+    button:hover{background:#212b3a}
+    .accent{background:linear-gradient(90deg,#3cc8ff,#8de7ff); color:#0b0e13}
+    .accent:hover{opacity:.95}
+    .canvasWrap{position:relative; padding:12px}
+    canvas{width:100%; height:100%; display:block; border-radius:14px; background:#0a0d12;}
+    .footer{grid-column:1/-1; color:var(--muted); font-size:12px; text-align:center; padding:12px 0 20px}
+    .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #273040; border-radius:999px; background:#111722; margin-top:8px; font-size:12px}
+    .swatch{width:18px; height:18px; border-radius:50%; border:1px solid #0003}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Archimedean Spiral — r = a + bθ</h1>
+      <div class="sub">슬라이더를 움직이면 즉시 갱신됩니다. 균일 간격의 아르키메데스 나선을 픽셀 캔버스에 자동 맞춤으로 그립니다.</div>
+    </header>
+
+    <section class="panel controls" id="controls">
+      <!-- a, b, turns, startAngle, direction, strokeWidth, padding, color -->
+      <div class="row">
+        <label for="a">a (시작 반지름)</label>
+        <input type="range" id="a" min="0" max="200" step="1" value="0" />
+        <input type="number" id="a_num" min="0" max="200" step="1" value="0" />
+      </div>
+      <div class="row">
+        <label for="b">b (증가율 / 간격)</label>
+        <input type="range" id="b" min="1" max="60" step="0.5" value="20" />
+        <input type="number" id="b_num" min="1" max="60" step="0.5" value="20" />
+      </div>
+      <div class="row">
+        <label for="turns">회전 수 (turns)</label>
+        <input type="range" id="turns" min="1" max="20" step="1" value="7" />
+        <input type="number" id="turns_num" min="1" max="20" step="1" value="7" />
+      </div>
+      <div class="row">
+        <label for="start">시작 각도 (°)</label>
+        <input type="range" id="start" min="0" max="360" step="1" value="0" />
+        <input type="number" id="start_num" min="0" max="360" step="1" value="0" />
+      </div>
+      <div class="row">
+        <label for="dir">방향</label>
+        <select id="dir">
+          <option value="1">시계</option>
+          <option value="-1">반시계</option>
+        </select>
+        <div></div>
+      </div>
+      <div class="row">
+        <label for="stroke">선 두께 (px)</label>
+        <input type="range" id="stroke" min="1" max="14" step="1" value="6" />
+        <input type="number" id="stroke_num" min="1" max="14" step="1" value="6" />
+      </div>
+      <div class="row">
+        <label for="pad">여백 (px)</label>
+        <input type="range" id="pad" min="0" max="120" step="2" value="20" />
+        <input type="number" id="pad_num" min="0" max="120" step="2" value="20" />
+      </div>
+      <div class="row">
+        <label for="color">색상</label>
+        <input type="color" id="color" value="#e7e3df" />
+        <div class="chip"><span class="swatch" id="sw"></span><span id="hexread">#e7e3df</span></div>
+      </div>
+      <div class="btnbar">
+        <button id="downloadPNG" class="accent">PNG로 저장</button>
+        <button id="downloadSVG">SVG로 저장</button>
+        <button id="reset">초기화</button>
+      </div>
+    </section>
+
+    <section class="panel canvasWrap">
+      <canvas id="canvas" width="1600" height="1200" aria-label="spiral preview"></canvas>
+    </section>
+
+    <div class="footer">수식: r = a + bθ · 적합 스케일 자동화(패딩 고려) · 레티나 스케일 지원 · 실시간 렌더링</div>
+  </div>
+
+  <script>
+    const el = id => document.getElementById(id);
+
+    const params = {
+      a: 0,
+      b: 20,
+      turns: 7,
+      startDeg: 0,
+      dir: 1,
+      stroke: 6,
+      pad: 20,
+      color: '#e7e3df'
+    };
+
+    // UI wiring (range <-> number sync)
+    function bindPair(rangeId, numId, key){
+      const r = el(rangeId), n = el(numId);
+      const sync = v => { params[key] = +v; r.value = v; n.value = v; draw(); pushState(); };
+      r.addEventListener('input', e => sync(e.target.value));
+      n.addEventListener('input', e => sync(e.target.value));
+    }
+
+    bindPair('a','a_num','a');
+    bindPair('b','b_num','b');
+    bindPair('turns','turns_num','turns');
+    bindPair('start','start_num','startDeg');
+    bindPair('stroke','stroke_num','stroke');
+    bindPair('pad','pad_num','pad');
+
+    el('dir').addEventListener('change', e => { params.dir = +e.target.value; draw(); pushState(); });
+    el('color').addEventListener('input', e => { params.color = e.target.value; swatch(); draw(); pushState(); });
+
+    function swatch(){
+      el('sw').style.background = params.color;
+      el('hexread').textContent = params.color.toLowerCase();
+    }
+
+    // Load from URL (shareable state)
+    function loadFromHash(){
+      if(location.hash.length>1){
+        try{
+          const q = new URLSearchParams(location.hash.slice(1));
+          for(const k of Object.keys(params)){
+            if(q.has(k)){
+              const v = q.get(k);
+              params[k] = (k==='color') ? v : +v;
+            }
+          }
+        }catch(_){/* ignore */}
+      }
+      // write back to UI
+      const map = {a:'a', b:'b', turns:'turns', startDeg:'start', stroke:'stroke', pad:'pad'};
+      for(const [key,base] of Object.entries(map)){
+        el(base).value = params[key];
+        el(base+"_num").value = params[key];
+      }
+      el('dir').value = String(params.dir);
+      el('color').value = params.color; swatch();
+    }
+
+    function pushState(){
+      const q = new URLSearchParams();
+      for(const [k,v] of Object.entries(params)) q.set(k, v);
+      history.replaceState(null,'', '#'+q.toString());
+    }
+
+    // Canvas drawing
+    const canvas = el('canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas(){
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const rect = canvas.getBoundingClientRect();
+      canvas.width  = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
+    }
+
+    function draw(){
+      resizeCanvas();
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      ctx.clearRect(0,0,w,h);
+
+      // Calculate max radius and scale
+      const thetaMax = params.turns * 2*Math.PI;
+      const rMax = Math.max(1e-6, params.a + params.b * thetaMax);
+      const fitR = Math.min(w,h)/2 - params.pad - params.stroke/2 - 2; // padding & stroke
+      const s = fitR / rMax; // pixel per unit of r
+
+      const cx = w/2, cy = h/2;
+
+      // Draw background grid (subtle)
+      grid(cx, cy, w, h);
+
+      // Stroke style
+      ctx.lineWidth = params.stroke;
+      ctx.strokeStyle = params.color;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // Render spiral using incremental angle steps chosen for smoothness
+      const step = angleStep(s, params.b); // adaptive step
+      const start = params.startDeg * Math.PI/180;
+      const dir = params.dir;
+
+      ctx.beginPath();
+      for(let th = 0; th <= thetaMax; th += step){
+        const theta = start + dir*th;
+        const r = params.a + params.b * th;
+        const x = cx + (s*r) * Math.cos(theta);
+        const y = cy + (s*r) * Math.sin(theta);
+        if(th === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+
+    // Choose a step so that arc length per segment ~ 1px for smoothness, capped
+    function angleStep(scale, b){
+      // ds ≈ sqrt((dr)^2 + (r dθ)^2). For Archimedean, dr/dθ = b
+      // Choose dθ so that ds_pix ~ 1. Let r grow, so be conservative at large r.
+      // Use r ≈ a + bθ; without θ here, approximate with r_max later inside loop would be costly.
+      // Simpler: fixed small step scaled by 1/scale.
+      const base = 0.015; // base in radians
+      return Math.max(0.003, base / Math.sqrt(Math.max(1, scale)));
+    }
+
+    function grid(cx, cy, w, h){
+      const g = ctx;
+      g.save();
+      g.strokeStyle = 'rgba(255,255,255,0.06)';
+      g.lineWidth = 1;
+      // crosshair
+      g.beginPath(); g.moveTo(12, cy); g.lineTo(w-12, cy); g.moveTo(cx, 12); g.lineTo(cx, h-12); g.stroke();
+      // rings
+      g.strokeStyle = 'rgba(255,255,255,0.04)';
+      for(let r=80; r<Math.min(w,h)/2; r+=80){
+        g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.stroke();
+      }
+      g.restore();
+    }
+
+    // Exporters
+    el('downloadPNG').addEventListener('click', () => {
+      // Temporarily render to an offscreen with higher res for crisp export
+      const off = document.createElement('canvas');
+      const scale = 2; // 2x export
+      off.width = canvas.clientWidth * scale;
+      off.height = canvas.clientHeight * scale;
+      const c2 = off.getContext('2d');
+      c2.scale(scale, scale);
+      // draw into offscreen by temporarily swapping ctx target
+      const old = {stroke: params.color, lw: params.stroke};
+      // re-draw with current parameters
+      const saveCanvas = canvas; const saveCtx = ctx;
+      (function drawTo(cnv, g){
+        // local draw copy (minimal)
+        const w = off.width/scale, h = off.height/scale;
+        // background
+        g.fillStyle = '#0a0d12'; g.fillRect(0,0,w,h);
+        const thetaMax = params.turns*2*Math.PI; const rMax = Math.max(1e-6, params.a+params.b*thetaMax);
+        const fitR = Math.min(w,h)/2 - params.pad - params.stroke/2 - 2; const s = fitR/rMax;
+        const cx=w/2, cy=h/2; const start = params.startDeg*Math.PI/180; const dir=params.dir; 
+        g.lineWidth=params.stroke; g.strokeStyle=params.color; g.lineCap='round'; g.lineJoin='round';
+        const step = angleStep(s, params.b);
+        g.beginPath();
+        for(let th=0; th<=thetaMax; th+=step){
+          const theta=start+dir*th; const r=params.a+params.b*th; const x=cx+(s*r)*Math.cos(theta); const y=cy+(s*r)*Math.sin(theta);
+          if(th===0) g.moveTo(x,y); else g.lineTo(x,y);
+        }
+        g.stroke();
+      })(off, c2);
+      const url = off.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = url; link.download = `spiral_a${params.a}_b${params.b}_t${params.turns}.png`;
+      link.click();
+    });
+
+    el('downloadSVG').addEventListener('click', () => {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      const thetaMax = params.turns * 2*Math.PI;
+      const rMax = Math.max(1e-6, params.a + params.b * thetaMax);
+      const fitR = Math.min(w,h)/2 - params.pad - params.stroke/2 - 2;
+      const s = fitR / rMax;
+      const cx=w/2, cy=h/2; const start=params.startDeg*Math.PI/180; const dir=params.dir;
+      const step = angleStep(s, params.b);
+
+      let d = '';
+      for(let th=0; th<=thetaMax; th+=step){
+        const theta=start+dir*th; const r=params.a+params.b*th; const x=cx+(s*r)*Math.cos(theta); const y=cy+(s*r)*Math.sin(theta);
+        d += (th===0?`M ${x.toFixed(2)} ${y.toFixed(2)}`:` L ${x.toFixed(2)} ${y.toFixed(2)}`);
+      }
+
+      const svg = `<?xml version="1.0" encoding="UTF-8"?>\n`+
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none">`+
+        `<rect width="100%" height="100%" fill="#0a0d12"/>`+
+        `<path d="${d}" stroke="${params.color}" stroke-width="${params.stroke}" stroke-linecap="round" stroke-linejoin="round"/>`+
+        `</svg>`;
+      const blob = new Blob([svg], {type:'image/svg+xml'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `spiral_a${params.a}_b${params.b}_t${params.turns}.svg`;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    });
+
+    el('reset').addEventListener('click', () => {
+      Object.assign(params, {a:0,b:20,turns:7,startDeg:0,dir:1,stroke:6,pad:20,color:'#e7e3df'});
+      loadFromHash(); draw(); pushState();
+    });
+
+    window.addEventListener('resize', draw);
+    loadFromHash();
+    draw();
+  </script>
+</body>
+</html>

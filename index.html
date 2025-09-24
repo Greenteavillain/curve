@@ -6,39 +6,38 @@
   <title>Archimedean Spiral — r = a + bθ</title>
   <style>
     :root{
-      --bg:#0f1115; --panel:#161a22; --text:#e7ecf3; --muted:#9aa4b2; --accent:#6ee7ff;
+      --bg:#ffffff; --panel:#ffffff; --text:#080808; --muted:#181818; --accent:#ffffff;
     }
     *{box-sizing:border-box}
-    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,Pretendard,sans-serif; color:var(--text); background:linear-gradient(180deg,#0b0e13 0%, #0f1115 100%);}    
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,Pretendard,sans-serif; color:var(--text); background:#ffffff;}    
     .wrap{display:grid; grid-template-columns:340px 1fr; gap:16px; min-height:100vh;}
     @media (max-width:900px){.wrap{grid-template-columns:1fr;}}
     header{grid-column:1/-1; padding:18px 20px 4px;}
     header h1{margin:0; font-size:20px; font-weight:700; letter-spacing:.2px}
     header .sub{color:var(--muted); font-size:13px; margin-top:6px}
-    .panel{background:var(--panel); border:1px solid #232a36; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .panel{background:var(--panel); border:1px solid #232a36; border-radius:14px; }
     .controls{padding:16px}
     .row{display:grid; grid-template-columns:110px 1fr 72px; gap:10px; align-items:center; margin:10px 0}
-    .row label{font-size:13px; color:var(--muted)}
+    .row label{font-size:13px; color:#202020}
     .row input[type="range"]{width:100%}
-    .row input[type="number"], .row select{width:100%; padding:8px 10px; background:#0d1118; border:1px solid #283140; color:var(--text); border-radius:10px}
+    .row input[type="number"], .row select{width:100%; padding:8px 10px; border:1px solid #202020; color:var(--text); border-radius:10px}
     .inline{display:flex; gap:10px}
-    .btnbar{display:flex; gap:10px; padding:12px 16px; border-top:1px solid #232a36}
-    button{appearance:none; border:none; padding:10px 12px; border-radius:12px; background:#1e2633; color:var(--text); font-weight:600; cursor:pointer}
-    button:hover{background:#212b3a}
-    .accent{background:linear-gradient(90deg,#3cc8ff,#8de7ff); color:#0b0e13}
+    .btnbar{display:flex; gap:10px; padding:12px 16px; border-top:1px solid #202020}
+    button{appearance:none; border:none; padding:10px 12px; border: 1px solid #202020; border-radius:12px; background:#ffffff; color:var(--text); font-weight:600; cursor:pointer}
+    button:hover{ background: #7e7e7e; }
+    .accent{background:linear-gradient(90deg,#3cc8ff,#8de7ff); color:#202020}
     .accent:hover{opacity:.95}
     .canvasWrap{position:relative; padding:12px}
-    canvas{width:100%; height:100%; display:block; border-radius:14px; background:#0a0d12;}
+    canvas{width:100%; height:100%; display:block; border-radius:14px;}
     .footer{grid-column:1/-1; color:var(--muted); font-size:12px; text-align:center; padding:12px 0 20px}
-    .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #273040; border-radius:999px; background:#111722; margin-top:8px; font-size:12px}
-    .swatch{width:18px; height:18px; border-radius:50%; border:1px solid #0003}
+    .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #202020; border-radius:10px; margin-top:8px; font-size:12px}
+    .swatch{width:18px; height:18px; border-radius:50%; border:1px solid #202020}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <h1>Archimedean Spiral — r = a + bθ</h1>
-      <div class="sub">슬라이더를 움직이면 즉시 갱신됩니다. 균일 간격의 아르키메데스 나선을 픽셀 캔버스에 자동 맞춤으로 그립니다.</div>
     </header>
 
     <section class="panel controls" id="controls">
@@ -83,11 +82,11 @@
       </div>
       <div class="row">
         <label for="color">색상</label>
-        <input type="color" id="color" value="#e7e3df" />
-        <div class="chip"><span class="swatch" id="sw"></span><span id="hexread">#e7e3df</span></div>
+        <input type="color" id="color" value="#202020" />
+        <div class="chip"><span id="hexread">#202020</span><span class="swatch" id="sw"></span></div>
       </div>
       <div class="btnbar">
-        <button id="downloadPNG" class="accent">PNG로 저장</button>
+        <button id="downloadPNG">PNG로 저장</button>
         <button id="downloadSVG">SVG로 저장</button>
         <button id="reset">초기화</button>
       </div>
@@ -97,7 +96,7 @@
       <canvas id="canvas" width="1600" height="1200" aria-label="spiral preview"></canvas>
     </section>
 
-    <div class="footer">수식: r = a + bθ · 적합 스케일 자동화(패딩 고려) · 레티나 스케일 지원 · 실시간 렌더링</div>
+    <div class="footer">greenteavillain</div>
   </div>
 
   <script>
@@ -111,7 +110,7 @@
       dir: 1,
       stroke: 6,
       pad: 20,
-      color: '#e7e3df'
+      color: '#202020'
     };
 
     // UI wiring (range <-> number sync)

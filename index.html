@@ -9,14 +9,59 @@
       --bg:#ffffff; --panel:#ffffff; --text:#080808; --muted:#181818; --accent:#ffffff;
     }
     *{box-sizing:border-box}
-    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,Pretendard,sans-serif; color:var(--text); background:#ffffff;}    
-    .wrap{display:grid; grid-template-columns:340px 1fr; gap:16px; min-height:100vh;}
-    @media (max-width:900px){.wrap{grid-template-columns:1fr;}}
-    header{grid-column:1/-1; padding:18px 20px 4px;}
+
+    /* 페이지 스크롤 차단 + 기본 세팅 */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* 페이지 스크롤 자체 제거 */
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,Pretendard,sans-serif;
+      color:var(--text);
+      background:#ffffff;
+    }
+
+    /* 레이아웃을 100vh에 정확히 맞춤: 헤더/콘텐츠/푸터 3행 */
+    .wrap{
+      
+      display:grid;
+      grid-template-columns:340px 1fr;
+      grid-template-rows: auto 1fr auto;            /* ⬅ 헤더(auto) / 본문(1fr) / 푸터(auto) */
+      grid-template-areas:
+        "header header"
+        "controls canvas"
+        "footer footer";
+      gap:16px;
+      height:100vh;                                  /* ⬅ 페이지 높이에 딱 맞춤 */
+      padding:0 15px;                                     /* 필요시 조정 */
+    }
+
+    @media (max-width:900px){
+      .wrap{
+        grid-template-columns:1fr;
+        grid-template-rows: auto auto 1fr auto;      /* ⬅ 모바일에서도 캔버스가 1fr 트랙을 받도록 */
+        grid-template-areas:
+          "header"
+          "controls"
+          "canvas"
+          "footer";
+      }
+    }
+
+    header{grid-area:header; padding:18px 20px 4px;}
     header h1{margin:0; font-size:20px; font-weight:700; letter-spacing:.2px}
     header .sub{color:var(--muted); font-size:13px; margin-top:6px}
-    .panel{background:var(--panel); border:1px solid #232a36; border-radius:14px; }
-    .controls{padding:16px}
+
+    .panel{background:var(--panel); border:1px solid #232a36; border-radius:14px;}
+
+    /* 좌측 패널은 필요 시 내부 스크롤 허용 (페이지 스크롤은 없음) */
+    #controls{
+      grid-area:controls;
+      padding:16px;
+      min-height:0;          /* ⬅ 그리드 자식이 내용 높이에 ‘잡아먹히지’ 않게 */
+      overflow:auto;         /* ⬅ 패널 내부만 스크롤 */
+    }
+
     .row{display:grid; grid-template-columns:110px 1fr 72px; gap:10px; align-items:center; margin:10px 0}
     .row label{font-size:13px; color:#202020}
     .row input[type="range"]{width:100%}
@@ -27,9 +72,26 @@
     button:hover{ background: #7e7e7e; }
     .accent{background:linear-gradient(90deg,#3cc8ff,#8de7ff); color:#202020}
     .accent:hover{opacity:.95}
-    .canvasWrap{position:relative; padding:12px}
-    canvas{width:100%; height:100%; display:block; border-radius:14px;}
-    .footer{grid-column:1/-1; color:var(--muted); font-size:12px; text-align:center; padding:12px 0 20px}
+
+    /* 캔버스 영역은 1fr 트랙을 ‘가득’ 사용, 오버플로우 없음 */
+    .canvasWrap{
+      grid-area:canvas;
+      position:relative;
+      padding:12px;
+      min-height:0;          /* ⬅ 여기가 핵심: 그리드 안에서 줄어들 수 있게 */
+      overflow:hidden;       /* ⬅ 테두리 안에서만 잘리도록 */
+      display:block;
+    }
+
+    /* 캔버스가 부모 높이를 꽉 채우도록 */
+    canvas{
+      width:100%;
+      height:100%;
+      display:block;
+      border-radius:14px;
+    }
+
+    .footer{grid-area:footer; color:var(--muted); font-size:12px; text-align:center; padding:12px 0 20px}
     .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #202020; border-radius:10px; margin-top:8px; font-size:12px}
     .swatch{width:18px; height:18px; border-radius:50%; border:1px solid #202020}
   </style>
@@ -40,7 +102,6 @@
       <h1>Archimedean Spiral</h1>
     </header>
 
-    
     <section class="panel controls" id="controls">
       <!-- a, b, turns, startAngle, direction, strokeWidth, padding, color -->
       <div class="row">
@@ -114,7 +175,6 @@
       color: '#202020'
     };
 
-    // UI wiring (range <-> number sync)
     function bindPair(rangeId, numId, key){
       const r = el(rangeId), n = el(numId);
       const sync = v => { params[key] = +v; r.value = v; n.value = v; draw(); pushState(); };
@@ -137,7 +197,6 @@
       el('hexread').textContent = params.color.toLowerCase();
     }
 
-    // Load from URL (shareable state)
     function loadFromHash(){
       if(location.hash.length>1){
         try{
@@ -148,9 +207,8 @@
               params[k] = (k==='color') ? v : +v;
             }
           }
-        }catch(_){/* ignore */}
+        }catch(_){}
       }
-      // write back to UI
       const map = {a:'a', b:'b', turns:'turns', startDeg:'start', stroke:'stroke', pad:'pad'};
       for(const [key,base] of Object.entries(map)){
         el(base).value = params[key];
@@ -166,16 +224,15 @@
       history.replaceState(null,'', '#'+q.toString());
     }
 
-    // Canvas drawing
     const canvas = el('canvas');
     const ctx = canvas.getContext('2d');
 
     function resizeCanvas(){
       const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const rect = canvas.getBoundingClientRect();
+      const rect = canvas.getBoundingClientRect();   // ⬅ 이제 캔버스 부모가 1fr 높이를 가지므로 rect가 100vh 안에 들어옴
       canvas.width  = Math.round(rect.width * dpr);
       canvas.height = Math.round(rect.height * dpr);
-      ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
+      ctx.setTransform(dpr,0,0,dpr,0,0);
     }
 
     function draw(){
@@ -183,25 +240,21 @@
       const w = canvas.clientWidth, h = canvas.clientHeight;
       ctx.clearRect(0,0,w,h);
 
-      // Calculate max radius and scale
       const thetaMax = params.turns * 2*Math.PI;
       const rMax = Math.max(1e-6, params.a + params.b * thetaMax);
-      const fitR = Math.min(w,h)/2 - params.pad - params.stroke/2 - 2; // padding & stroke
-      const s = fitR / rMax; // pixel per unit of r
+      const fitR = Math.min(w,h)/2 - params.pad - params.stroke/2 - 2;
+      const s = fitR / rMax;
 
       const cx = w/2, cy = h/2;
 
-      // Draw background grid (subtle)
       grid(cx, cy, w, h);
 
-      // Stroke style
       ctx.lineWidth = params.stroke;
       ctx.strokeStyle = params.color;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // Render spiral using incremental angle steps chosen for smoothness
-      const step = angleStep(s, params.b); // adaptive step
+      const step = angleStep(s, params.b);
       const start = params.startDeg * Math.PI/180;
       const dir = params.dir;
 
@@ -216,13 +269,8 @@
       ctx.stroke();
     }
 
-    // Choose a step so that arc length per segment ~ 1px for smoothness, capped
     function angleStep(scale, b){
-      // ds ≈ sqrt((dr)^2 + (r dθ)^2). For Archimedean, dr/dθ = b
-      // Choose dθ so that ds_pix ~ 1. Let r grow, so be conservative at large r.
-      // Use r ≈ a + bθ; without θ here, approximate with r_max later inside loop would be costly.
-      // Simpler: fixed small step scaled by 1/scale.
-      const base = 0.015; // base in radians
+      const base = 0.015;
       return Math.max(0.003, base / Math.sqrt(Math.max(1, scale)));
     }
 
@@ -231,9 +279,7 @@
       g.save();
       g.strokeStyle = 'rgba(255,255,255,0.06)';
       g.lineWidth = 1;
-      // crosshair
       g.beginPath(); g.moveTo(12, cy); g.lineTo(w-12, cy); g.moveTo(cx, 12); g.lineTo(cx, h-12); g.stroke();
-      // rings
       g.strokeStyle = 'rgba(255,255,255,0.04)';
       for(let r=80; r<Math.min(w,h)/2; r+=80){
         g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.stroke();
@@ -241,23 +287,15 @@
       g.restore();
     }
 
-    // Exporters
     el('downloadPNG').addEventListener('click', () => {
-      // Temporarily render to an offscreen with higher res for crisp export
       const off = document.createElement('canvas');
-      const scale = 2; // 2x export
+      const scale = 2;
       off.width = canvas.clientWidth * scale;
       off.height = canvas.clientHeight * scale;
       const c2 = off.getContext('2d');
       c2.scale(scale, scale);
-      // draw into offscreen by temporarily swapping ctx target
-      const old = {stroke: params.color, lw: params.stroke};
-      // re-draw with current parameters
-      const saveCanvas = canvas; const saveCtx = ctx;
       (function drawTo(cnv, g){
-        // local draw copy (minimal)
         const w = off.width/scale, h = off.height/scale;
-        // background
         g.fillStyle = '#0a0d12'; g.fillRect(0,0,w,h);
         const thetaMax = params.turns*2*Math.PI; const rMax = Math.max(1e-6, params.a+params.b*thetaMax);
         const fitR = Math.min(w,h)/2 - params.pad - params.stroke/2 - 2; const s = fitR/rMax;
